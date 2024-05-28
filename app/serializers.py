@@ -131,11 +131,11 @@ class RepairProductSerializer(serializers.ModelSerializer):
         model = RepairProduct
         fields = [
             "id", 
-            "product_code", 
-            "assembly_code",
+            "product", 
+            "assembly",
             "quantity",
             "status",
-            "created_at"
+            "date"
         ]
 
 

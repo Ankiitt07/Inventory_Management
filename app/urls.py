@@ -11,7 +11,12 @@ from .views import (
     AssemblyProductsListView,
     DailyInventoryData,
     PackagedProductData,
-    DispatchedProductData
+    DispatchedProductData,
+    RepairedProductData,
+    RejectProductData
+)
+from app.dashboard import (
+    ProductsAnalytics
 )
 from app.auth import (
     UserRegister, 
@@ -45,6 +50,12 @@ urlpatterns = [
     # URLs related to dispatched product data API.
     path('dispatched_product_data/', DispatchedProductData.as_view(), name='dispatched_product_data'),
 
+    # URLs related to dispatched product data API.
+    path('repair_product_data/', RepairedProductData.as_view(), name='repair_product_data'),
+
+    # URLs related to dispatched product data API.
+    path('reject_product_data/', RejectProductData.as_view(), name='reject_product_data'),
+
     # URLs related to data via excel sheet
     path("upload_products_data/", UploadBulkProducts.as_view()),
     path("upload_assembly_data/", UploadAssembly.as_view()),
@@ -55,4 +66,12 @@ urlpatterns = [
     path('assembly/', AssemblyListView.as_view(), name='assembly-list'),
     path('assembly_products/', AssemblyProductsListView.as_view(), name='assembly-products-list'),
     path('add_opening_stocks/', add_opening_stocks, name='add_opening_stocks'),
+
+
+    # URLs for Analytics
+    path('products_analytics/', ProductsAnalytics.as_view(), name="prducts_analytics"),
+
+    # URLs for testing
+    path('add_products/', add_opening_stocks, name='add_products'),
+    
 ]

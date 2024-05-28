@@ -9,13 +9,18 @@
 
 </head>
 <body>
-    <header>
-        <nav class="navbar bg-body-tertiary">
-            <div class="container-fluid">
-              <a class="navbar-brand">Assembly Products List</a>
-            </div>
-          </nav>
-    </header>
+  <header>
+    <nav class="navbar bg-body-tertiary">
+        <div class="container-fluid">
+          <a class="navbar-brand">Products List</a>
+          <form class="d-flex" role="search" action="#">
+            <a href="#" class="navbar-brand">Home</a>
+            <a href="#" class="btn btn-primary" style="margin-right: 10px;">Add Product</a>
+            <a href="#" class="btn btn-danger" type="button">Logout</a>
+          </form>
+        </div>
+      </nav>
+</header>
     <main class="container mt-5">
         <table class="table" aria-describedby="">
             <thead>
@@ -23,7 +28,7 @@
                 <th scope="col">Product Code</th>
                 <th scope="col">Product Name</th>
                 <th scope="col">Product Description</th>
-                <th scope="col">Product Quantity</th>
+                <th scope="col">Product Status</th>
               </tr>
             </thead>
             <tbody>
@@ -33,7 +38,11 @@
                 <td>{{item.product_code}}</td>
                 <td>{{item.product_name}}</td>
                 <td>{{item.product_description}}</td>
-                <td>{{item.product_quantity}}</td>
+                {% if item.product_status == 1 %}
+                <td style="color: green;">Active</td>
+                {% else %}
+                <td style="color: red;">Inctive</td>
+                {% endif %}
               </tr>
               {% endfor %}
               {% endif %}

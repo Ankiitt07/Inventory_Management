@@ -105,7 +105,7 @@ class DailyInventory(models.Model):
     product = models.ForeignKey(Product, to_field="product_code", on_delete=models.CASCADE, default=None)
     opening_stock = models.IntegerField(default=0)
     closing_stock = models.IntegerField(default=0)
-    inventory_date = models.DateField(auto_now=True)
+    inventory_date = models.DateField(default = None)
     created_at = models.DateTimeField(auto_now=True)
     created_by = models.IntegerField(default="0")
     updated_at = models.DateTimeField(auto_now=True)
@@ -125,8 +125,9 @@ class PackagedProduct(models.Model):
     id = models.AutoField(primary_key=True)
     product = models.ForeignKey(Product, to_field="product_code", on_delete=models.CASCADE, blank=True, null=True)
     assembly = models.ForeignKey(AssemblyLine, to_field="assembly_code", on_delete=models.CASCADE, blank=True, null=True)
-    quantity = models.IntegerField()
-    packaged_date = models.DateField(auto_now=True)
+    opening_stock = models.IntegerField(default=0)
+    closing_stock = models.IntegerField(default=0)
+    packaged_date = models.DateField(default = None)
     created_at = models.DateTimeField(auto_now=True)
     created_by = models.IntegerField(default="0")
     updated_at = models.DateTimeField(auto_now=True)
@@ -146,7 +147,7 @@ class DispatchedProduct(models.Model):
     id = models.AutoField(primary_key=True)
     packaged_product = models.ForeignKey(PackagedProduct, on_delete=models.CASCADE)
     quantity = models.IntegerField()
-    dispatched_date = models.DateField(auto_now=True)
+    dispatched_date = models.DateField(default = None)
     created_at = models.DateTimeField(auto_now=True)
     created_by = models.IntegerField(default="0")
     updated_at = models.DateTimeField(auto_now=True)
@@ -166,12 +167,13 @@ class RepairProduct(models.Model):
     id = models.AutoField(primary_key=True)
     product = models.ForeignKey(Product, to_field="product_code", on_delete=models.CASCADE, blank=True, null=True)
     assembly = models.ForeignKey(AssemblyLine, to_field="assembly_code", on_delete=models.CASCADE, blank=True, null=True)
-    quantity = models.IntegerField()
+    opening_stock = models.IntegerField(default=0)
+    closing_stock = models.IntegerField(default=0)
     status = models.IntegerField(
         choices=status_choice,
         default=1
     )
-    date = models.DateField(auto_now=True)
+    date = models.DateField(default = None)
     created_at = models.DateTimeField(auto_now=True)
     created_by = models.IntegerField(default="0")
     updated_at = models.DateTimeField(auto_now=True)
@@ -192,7 +194,7 @@ class RejectProduct(models.Model):
     product = models.ForeignKey(Product, to_field="product_code", on_delete=models.CASCADE, blank=True, null=True)
     assembly = models.ForeignKey(AssemblyLine, to_field="assembly_code", on_delete=models.CASCADE, blank=True, null=True)
     quantity = models.IntegerField()
-    date = models.DateField(auto_now=True)
+    date = models.DateField(default = None)
     created_at = models.DateTimeField(auto_now=True)
     created_by = models.IntegerField(default="0")
     updated_at = models.DateTimeField(auto_now=True)
@@ -206,5 +208,3 @@ class RejectProduct(models.Model):
     class Meta:
         db_table = 'reject_product_table'
         managed = True
-
-

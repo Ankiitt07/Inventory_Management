@@ -1,10 +1,13 @@
 from django.contrib import admin
 from app.models import (
     Product, 
-    PackagedProduct, 
     AssemblyLine, 
     AssemblyProducts,
-    DailyInventory
+    DailyInventory,
+    PackagedProduct,
+    DispatchedProduct,
+    RepairProduct,
+    RejectProduct 
 )
 
 
@@ -28,5 +31,17 @@ class DailyInventoryData(admin.ModelAdmin):
 admin.site.register(DailyInventory, DailyInventoryData)
 
 class PackagedProductData(admin.ModelAdmin):
-    list_display = ('id','product','assembly','quantity','created_at')
+    list_display = ('id','product','assembly','opening_stock','closing_stock','packaged_date')
 admin.site.register(PackagedProduct, PackagedProductData)
+
+class DispatchedProductData(admin.ModelAdmin):
+    list_display = ('id','packaged_product','quantity','dispatched_date')
+admin.site.register(DispatchedProduct, DispatchedProductData)
+
+class RepairProductData(admin.ModelAdmin):
+    list_display = ('id','product','assembly','opening_stock','closing_stock','date')
+admin.site.register(RepairProduct, RepairProductData)
+
+class RejectProductData(admin.ModelAdmin):
+    list_display = ('id','product','assembly','quantity','date')
+admin.site.register(RejectProduct, RejectProductData)
