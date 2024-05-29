@@ -24,6 +24,7 @@ from app.auth import (
     ResetPassword
 )
 from .views import add_opening_stocks
+from app.token_auth_helper import generate_order_no
 
 urlpatterns = [
 
@@ -69,9 +70,14 @@ urlpatterns = [
 
 
     # URLs for Analytics
-    path('products_analytics/', ProductsAnalytics.as_view(), name="prducts_analytics"),
+    path(
+        'products_count_data/<str:date>/', 
+        ProductsAnalytics.as_view({"get": "get_products_count"}), 
+        name="get_products_count"
+    ),
 
     # URLs for testing
     path('add_products/', add_opening_stocks, name='add_products'),
+    path('generate_order_no/', generate_order_no, name='generate_order_no'),
     
 ]

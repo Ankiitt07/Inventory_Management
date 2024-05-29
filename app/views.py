@@ -273,10 +273,7 @@ class DailyInventoryData(APIView):
     @verify_token_class
     def get(self, request, format=None):
 
-        current_date = date.today()
-        print(current_date)
-
-        inventory_data = DailyInventory.objects.filter(inventory_date = current_date)
+        inventory_data = DailyInventory.objects.all().exclude(closing_stock=0)
 
         serializer = DailyInventorySerializer(inventory_data, many = True)
 
@@ -334,8 +331,7 @@ class PackagedProductData(APIView):
     @verify_token_class
     def get(self, request, format=None):
         
-        current_date = date.today()
-        packaged_product_data = PackagedProduct.objects.filter(packaged_date = current_date)
+        packaged_product_data = PackagedProduct.objects.filter().exclude(closing_stock=0)
 
         serializer = PackagedProductSerializer(packaged_product_data, many = True)
 
@@ -418,6 +414,11 @@ class PackagedProductData(APIView):
         try:
             current_date = date.today()
             return DailyInventory.objects.get(product__product_code=product_code, inventory_date = current_date)
+        except DailyInventory.DoesNotExist:
+            pass
+        
+        try:
+            return DailyInventory.objects.filter(product__product_code=product_code).order_by('-inventory_date').first()
         except DailyInventory.DoesNotExist:
             return None
     
@@ -514,46 +515,167 @@ class DispatchedProductData(APIView):
         }
         return Response(response, status=status.HTTP_200_OK)
     
+
     @verify_token_class
     def post(self, request, format=None):
+        product_data = request.data.get('product_data')
+        assembly_data = request.data.get('assembly_data')
 
-        requested_data = request.data.get('packed_data')
-        current_date = date.today()
+        if product_data:
+            response = self.handle_product_data(product_data)
+            if response:
+                return response
 
-        for data in requested_data:
+        if assembly_data:
+            response = self.handle_assembly_data(assembly_data)
+            if response:
+                return response
 
-            packed_product = PackagedProduct.objects.get(id = data['packaged_product'])
-            dispatch_data = DispatchedProduct.objects.filter(packaged_product_id=data["packaged_product"])
-
-            if packed_product.quantity < int(data['quantity']):
-                response = {
-                    "success": False,
-                    "message": f"Required quantity for packed product is not in stock"
-                }
-                return Response(response, status=status.HTTP_400_BAD_REQUEST)
-
-            elif dispatch_data.exists():
-                dispatch_data_item = DispatchedProduct.objects.get(packaged_product_id=data["packaged_product"])
-                dispatch_data_item.quantity += int(data['quantity'])
-                dispatch_data_item.dispatched_date = current_date
-                dispatch_data_item.save()
-                packed_product.quantity = packed_product.quantity - int(data['quantity'])
-                packed_product.save()
-
-            else:
-                DispatchedProduct.objects.create(
-                    packaged_product_id=data["packaged_product"],
-                    quantity = int(data['quantity']),
-                    dispatched_date = current_date
-                )
-                packed_product.quantity = packed_product.quantity - int(data['quantity'])
-                packed_product.save()
-        
         response = {
-            "success" : True,
-            "message" : "Dispatch Product Added Successfully",
+            "success": True,
+            "message": "Products for dispatch added successfully"
         }
-        return Response(response, status=status.HTTP_200_OK)
+        return Response(response, status=status.HTTP_201_CREATED)
+    
+    def handle_product_data(self, product_data):
+        try:
+            with transaction.atomic():
+                for data in product_data:
+                    product_code = data['product']
+                    quantity = int(data['quantity'])
+                    
+                    packed_product_data = self.get_product_packaged_data(product_code)
+                    if not product_data:
+                        return self.not_found_response(product_code)
+                    
+                    if packed_product_data.closing_stock < quantity:
+                        return self.insufficient_stock_response(product_code)
+                    
+                    self.update_quantity_for_product_in_packaging(packed_product_data, quantity)
+                    self.create_or_update_dispatch_product(product_code, quantity)
+        except Exception as e:
+            return self.error_response(e)
+    
+    def handle_assembly_data(self, assembly_data):
+        try:
+            with transaction.atomic():
+                for data in assembly_data:
+                    assembly = data['assembly']
+                    assembly_quantity = int(data['quantity'])
+                        
+                    packed_assembly_data = self.get_assembly_packaged_data(assembly)
+                    if not packed_assembly_data:
+                        return self.not_found_response(assembly)
+                    
+                    if packed_assembly_data.closing_stock < assembly_quantity:
+                        return self.insufficient_stock_response_for_assembly(assembly)
+                    
+                    self.update_quantity_for_assembly_in_packaging(packed_assembly_data, assembly_quantity)
+                
+                self.create_or_update_dispatch_product_for_assembly(assembly, assembly_quantity)
+
+        except Exception as e:
+            return self.error_response(e)
+    
+    def get_product_packaged_data(self, product_code):
+        try:
+            current_date = date.today()
+            return PackagedProduct.objects.get(product__product_code=product_code, packaged_date=current_date)
+        except PackagedProduct.DoesNotExist:
+            pass
+        
+        try:
+            return PackagedProduct.objects.filter(product__product_code=product_code).order_by('-packaged_date').first()
+        except PackagedProduct.DoesNotExist:
+            return None
+    
+    def get_assembly_packaged_data(self, assembly):
+        try:
+            current_date = date.today()
+            return PackagedProduct.objects.get(assembly__assembly_code=assembly, packaged_date = current_date)
+        except PackagedProduct.DoesNotExist:
+            pass
+        
+        try:
+            return PackagedProduct.objects.filter(assembly__assembly_code=assembly).order_by('-packaged_date').first()
+        except PackagedProduct.DoesNotExist:
+            return None
+    
+    def update_quantity_for_product_in_packaging(self, product_data, product_quantity):
+        product_data.closing_stock -= product_quantity
+        product_data.save()
+    
+    def update_quantity_for_assembly_in_packaging(self, packed_assembly_data, assembly_quantity):
+        packed_assembly_data.closing_stock -= assembly_quantity
+        packed_assembly_data.save()
+    
+    def create_or_update_dispatch_product(self, product_code, quantity):
+    
+        today = date.today()
+        repair_product = DispatchedProduct.objects.filter(product_id=product_code, dispatched_date=today).first()
+        if repair_product:
+            repair_product.quantity += quantity
+            repair_product.save()
+        
+            return repair_product, False
+        else:
+            last_dispatched_product = DispatchedProduct.objects.filter(product_id = product_code).order_by('-dispatched_date').first()
+            if last_dispatched_product and last_dispatched_product.quantity != 0:
+                update_quantity = int(last_dispatched_product.quantity) + int(quantity)
+            else:
+                update_quantity = int(quantity)
+            packaged_product = DispatchedProduct.objects.create(
+                product_id=product_code, quantity=update_quantity, dispatched_date=today
+            )
+            return packaged_product, True
+    
+    def create_or_update_dispatch_product_for_assembly(self, assembly, assembly_quantity):
+
+        today = date.today()
+        dispatch_product = DispatchedProduct.objects.filter(assembly_id=assembly, date=today).first()
+        if dispatch_product:
+            dispatch_product.quantity += assembly_quantity
+            dispatch_product.save()
+            
+            return dispatch_product, False
+        else:
+            last_repair_assembly = RepairProduct.objects.filter(assembly_id=assembly).order_by('-date').first()
+            if last_repair_assembly and last_repair_assembly.closing_stock != 0:
+                update_opening_stock = int(last_repair_assembly.closing_stock) + int(assembly_quantity)
+            else:
+                update_opening_stock = int(assembly_quantity)
+            assembly_product = RepairProduct.objects.create(
+                assembly_id=assembly, opening_stock=update_opening_stock, closing_stock=update_opening_stock, date=today
+            )
+            return assembly_product, True
+
+    def not_found_response(self, product_code):
+        response = {
+            "success": False,
+            "message": f"Packaged Data for product code {product_code} does not exist"
+        }
+        return Response(response, status=status.HTTP_404_NOT_FOUND)
+    
+    def insufficient_stock_response(self, product_code):
+        response = {
+            "success": False,
+            "message": f"Required quantity for {product_code} is not in packaged stock"
+        }
+        return Response(response, status=status.HTTP_400_BAD_REQUEST)
+    
+    def insufficient_stock_response_for_assembly(self, assembly):
+        response = {
+            "success": False,
+            "message": f"Required quantity of {assembly} is not in packaged stock"
+        }
+        return Response(response, status=status.HTTP_400_BAD_REQUEST)
+    
+    def error_response(self, error):
+        response = {
+            "success": False,
+            "message": str(error)
+        }
+        return Response(response, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class RepairedProductData(APIView):
@@ -639,12 +761,23 @@ class RepairedProductData(APIView):
             current_date = date.today()
             return DailyInventory.objects.get(product__product_code=product_code, inventory_date = current_date)
         except DailyInventory.DoesNotExist:
+            pass
+        
+        try:
+            return DailyInventory.objects.filter(product__product_code=product_code).order_by('-inventory_date').first()
+        except DailyInventory.DoesNotExist:
             return None
     
     def get_assembly_inventory_data(self, assembly):
+        
         try:
             current_date = date.today()
             return DailyInventory.objects.get(assembly__assembly_code=assembly, inventory_date = current_date)
+        except DailyInventory.DoesNotExist:
+            pass
+        
+        try:
+            return DailyInventory.objects.filter(assembly__assembly_code=assembly).order_by('-inventory_date').first()
         except DailyInventory.DoesNotExist:
             return None
     
@@ -811,12 +944,23 @@ class RejectProductData(APIView):
             current_date = date.today()
             return DailyInventory.objects.get(product__product_code=product_code, inventory_date = current_date)
         except DailyInventory.DoesNotExist:
+            pass
+        
+        try:
+            return DailyInventory.objects.filter(product__product_code=product_code).order_by('-inventory_date').first()
+        except DailyInventory.DoesNotExist:
             return None
     
     def get_assembly_inventory_data(self, assembly):
+        
         try:
             current_date = date.today()
             return DailyInventory.objects.get(assembly__assembly_code=assembly, inventory_date = current_date)
+        except DailyInventory.DoesNotExist:
+            pass
+        
+        try:
+            return DailyInventory.objects.filter(assembly__assembly_code=assembly).order_by('-inventory_date').first()
         except DailyInventory.DoesNotExist:
             return None
     

@@ -1,8 +1,11 @@
 import jwt as jwt
 from datetime import datetime, timedelta, date
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view
 from django.http import JsonResponse
 from .models import Users, InvoiceData
+from rest_framework.response import Response
+from rest_framework import status
 
 def create_token(token):
     return jwt.encode(token, '1311874k', algorithm='HS256')
@@ -41,7 +44,6 @@ def verify_token(func):
                 }
                 return JsonResponse(context, status=400)
         except Exception as e:
-            # print(e)
             context = {
                 "message": e,
             }
@@ -87,6 +89,16 @@ def verify_token_class(func):
 
 def generate_order_no():
     current_date = date.today()
-    last_order_no = InvoiceData.objects.filter(date = current_date).order_by('-id').first()
-    order_number = f"{datetime.now()}"
-    return order_number
+    formatted_date = str(current_date).replace('-', '')
+    last_invoice  = InvoiceData.objects.filter(date = current_date).order_by('-id').first()
+    if last_invoice:
+        last_order_no = last_invoice.order_no
+        try:
+            base_order_no, last_sequence = last_order_no.split('/')
+            new_sequence = int(last_sequence) + 1
+        except ValueError:
+            new_sequence = 1
+    else:
+        new_sequence = 1
+    new_order_no = f"{formatted_date}/{new_sequence}"
+    return new_order_no

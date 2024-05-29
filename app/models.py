@@ -145,7 +145,8 @@ class PackagedProduct(models.Model):
 
 class DispatchedProduct(models.Model):
     id = models.AutoField(primary_key=True)
-    packaged_product = models.ForeignKey(PackagedProduct, on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, to_field="product_code", on_delete=models.CASCADE, blank=True, null=True)
+    assembly = models.ForeignKey(AssemblyLine, to_field="assembly_code", on_delete=models.CASCADE, blank=True, null=True)
     quantity = models.IntegerField()
     dispatched_date = models.DateField(default = None)
     created_at = models.DateTimeField(auto_now=True)
@@ -228,6 +229,7 @@ class InvoiceData(models.Model):
     class Meta:
         db_table = 'invoice_table'
         managed = True
+
 
 class InvoiceProducts(models.Model):
     id = models.AutoField(primary_key=True)

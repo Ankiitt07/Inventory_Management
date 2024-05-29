@@ -2,15 +2,23 @@ import pandas as pd
 from django.db import transaction
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status, viewsets
 from datetime import date, timedelta
 from django.contrib import messages
 from django.db.models import Sum
-from .models import Product
+from .models import Product, InvoiceData, InvoiceProducts
+from .serializers import (
+    DailyInventorySerializer,
+    PackagedProductSerializer,
+    DispatchedProductSerializer,
+    RepairProductSerializer,
+    RejectProductSerializer
+    )
 from django.shortcuts import render, redirect, get_object_or_404
 from .token_auth_helper import verify_token_class, generate_order_no
 
 from .models import (
+    DailyInventory,
     PackagedProduct,
     DispatchedProduct,
     RepairProduct,
@@ -18,63 +26,27 @@ from .models import (
     )
 
 
-class ProductsAnalytics(APIView):
+class ProductsAnalytics(viewsets.ModelViewSet):
 
-    # @verify_token_class
-    def get(self, request, format=None):
-        current_date = date.today()
+    @verify_token_class
+    def get_products_count(self, request, date, format=None):
 
-        # Calculate the first and last day of the current week
-        start_of_week = current_date - timedelta(days=current_date.weekday())
-        end_of_week = start_of_week + timedelta(days=6)
+        inventory_serializer = DailyInventorySerializer(DailyInventory.objects.filter(inventory_date = date), many = True)
+        package_serializer = PackagedProductSerializer(PackagedProduct.objects.filter(packaged_date = date), many = True)
+        dispatch_serializer = DispatchedProductSerializer(DispatchedProduct.objects.filter(dispatched_date = date), many = True)
+        repair_serializer = RepairProductSerializer(RepairProduct.objects.filter(date = date), many = True)
+        reject_serializer = RejectProductSerializer(RejectProduct.objects.filter(date = date), many = True)
 
-        # Calculate the first and last day of the current month
-        start_of_month = current_date.replace(day=1)
-        if current_date.month == 12:
-            end_of_month = current_date.replace(year=current_date.year + 1, month=1, day=1) - timedelta(days=1)
-        else:
-            end_of_month = current_date.replace(month=current_date.month + 1, day=1) - timedelta(days=1)
-
-        # Daily data aggregation
-        packaged_data_day = PackagedProduct.objects.filter(packaged_date=current_date).aggregate(Sum('opening_stock'))
-        dispatched_data_day = DispatchedProduct.objects.filter(dispatched_date=current_date).aggregate(Sum('quantity'))
-        repaired_data_day = RepairProduct.objects.filter(date=current_date).aggregate(Sum('opening_stock'))
-        reject_data_day = RejectProduct.objects.filter(date=current_date).aggregate(Sum('quantity'))
-
-        # Weekly data aggregation
-        packaged_data_week = PackagedProduct.objects.filter(packaged_date__range=[start_of_week, end_of_week]).aggregate(Sum('opening_stock'))
-        dispatched_data_week = DispatchedProduct.objects.filter(dispatched_date__range=[start_of_week, end_of_week]).aggregate(Sum('quantity'))
-        repaired_data_week = RepairProduct.objects.filter(date__range=[start_of_week, end_of_week]).aggregate(Sum('opening_stock'))
-        reject_data_week = RejectProduct.objects.filter(date__range=[start_of_week, end_of_week]).aggregate(Sum('quantity'))
-
-        # Monthly data aggregation
-        packaged_data_month = PackagedProduct.objects.filter(packaged_date__range=[start_of_month, end_of_month]).aggregate(Sum('opening_stock'))
-        dispatched_data_month = DispatchedProduct.objects.filter(dispatched_date__range=[start_of_month, end_of_month]).aggregate(Sum('quantity'))
-        repaired_data_month = RepairProduct.objects.filter(date__range=[start_of_month, end_of_month]).aggregate(Sum('opening_stock'))
-        reject_data_month = RejectProduct.objects.filter(date__range=[start_of_month, end_of_month]).aggregate(Sum('quantity'))
-
+        
         response = {
             "success": True,
-            "message": "Packaging data",
-            "date": current_date,
-            "daily_data": {
-                "packed_data": packaged_data_day,
-                "dispatched_data": dispatched_data_day,
-                "repaired_data": repaired_data_day,
-                "reject_data": reject_data_day,
-            },
-            "weekly_data": {
-                "packed_data": packaged_data_week,
-                "dispatched_data": dispatched_data_week,
-                "repaired_data": repaired_data_week,
-                "reject_data": reject_data_week,
-            },
-            "monthly_data": {
-                "packed_data": packaged_data_month,
-                "dispatched_data": dispatched_data_month,
-                "repaired_data": repaired_data_month,
-                "reject_data": reject_data_month,
-            }
+            "message": "Analytics data fetched",
+            "date": date,
+            "inventory_data": inventory_serializer.data,
+            "package_data": package_serializer.data,
+            "dispatch_data": dispatch_serializer.data,
+            "repair_data": repair_serializer.data,
+            "reject_data": reject_serializer.data
         }
         return Response(response, status=status.HTTP_200_OK)
 
@@ -83,7 +55,24 @@ class Invoice(APIView):
     
     @verify_token_class
     def post(self, request, format=None):
+
         product_data = request.data.get('product_data')
+        total_amount = request.data.get('total_amount')
 
         order_no = generate_order_no()
+
+        if order_no:
+            try:
+                InvoiceData.objects.create(
+                    order_no = order_no,
+                    total_amount = total_amount,
+                    date =  date.today()
+                )
+            except Exception as e:
+                return Response({"error" : f"{e}"})
         
+        # for data in product_data:
+
+        # InvoiceProducts.objects.create(
+        #     p
+        # )

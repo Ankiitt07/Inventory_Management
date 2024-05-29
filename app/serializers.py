@@ -120,7 +120,8 @@ class DispatchedProductSerializer(serializers.ModelSerializer):
         model = DispatchedProduct
         fields = [
             "id", 
-            "packaged_product", 
+            "product", 
+            "assembly", 
             "quantity",
             "dispatched_date"
         ]
@@ -134,7 +135,8 @@ class RepairProductSerializer(serializers.ModelSerializer):
             "id", 
             "product", 
             "assembly",
-            "quantity",
+            "opening_stock",
+            "closing_stock",
             "status",
             "date"
         ]

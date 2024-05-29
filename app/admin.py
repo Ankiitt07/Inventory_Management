@@ -35,7 +35,7 @@ class PackagedProductData(admin.ModelAdmin):
 admin.site.register(PackagedProduct, PackagedProductData)
 
 class DispatchedProductData(admin.ModelAdmin):
-    list_display = ('id','packaged_product','quantity','dispatched_date')
+    list_display = ('id','product','assembly','quantity','dispatched_date')
 admin.site.register(DispatchedProduct, DispatchedProductData)
 
 class RepairProductData(admin.ModelAdmin):
