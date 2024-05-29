@@ -13,6 +13,7 @@ from .serializers import (
     UserLoginSerializer
     )
 
+# API for user registered
 class UserRegister(APIView):
 
     def post(self, request, format=None):
