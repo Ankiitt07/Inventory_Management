@@ -601,14 +601,14 @@ class RepairedProductData(APIView):
                     product_code = data['product']
                     quantity = int(data['quantity'])
                     
-                    packed_product_data = self.get_product_packed_data(product_code)
+                    packed_product_data = self.get_product_inventory_data(product_code)
                     if not product_data:
                         return self.not_found_response(product_code)
                     
-                    if packed_product_data.quantity < quantity:
+                    if packed_product_data.closing_stock < quantity:
                         return self.insufficient_stock_response(product_code)
                     
-                    self.update_quantity_for_product_in_packaging(packed_product_data, quantity)
+                    self.update_quantity_for_product_in_inventory(packed_product_data, quantity)
                     self.create_or_update_repair_product(product_code, quantity)
         except Exception as e:
             return self.error_response(e)
@@ -620,40 +620,40 @@ class RepairedProductData(APIView):
                     assembly = data['assembly']
                     assembly_quantity = int(data['quantity'])
                         
-                    packed_assembly_data = self.get_assembly_packed_data(assembly)
+                    packed_assembly_data = self.get_assembly_inventory_data(assembly)
                     if not packed_assembly_data:
                         return self.not_found_response(assembly)
                     
-                    if packed_assembly_data.quantity < assembly_quantity:
+                    if packed_assembly_data.closing_stock < assembly_quantity:
                         return self.insufficient_stock_response_for_assembly(assembly)
                     
-                    self.update_quantity_for_assembly_in_packaging(packed_assembly_data, assembly_quantity)
+                    self.update_quantity_for_assembly_in_inventory(packed_assembly_data, assembly_quantity)
                 
                 self.create_or_update_repair_product_for_assembly(assembly, assembly_quantity)
 
         except Exception as e:
             return self.error_response(e)
     
-    def get_product_packed_data(self, product_code):
+    def get_product_inventory_data(self, product_code):
         try:
             current_date = date.today()
-            return PackagedProduct.objects.get(product__product_code=product_code, packaged_date = current_date)
-        except PackagedProduct.DoesNotExist:
+            return DailyInventory.objects.get(product__product_code=product_code, inventory_date = current_date)
+        except DailyInventory.DoesNotExist:
             return None
     
-    def get_assembly_packed_data(self, assembly):
+    def get_assembly_inventory_data(self, assembly):
         try:
             current_date = date.today()
-            return PackagedProduct.objects.get(assembly__assembly_code=assembly, packaged_date = current_date)
-        except PackagedProduct.DoesNotExist:
+            return DailyInventory.objects.get(assembly__assembly_code=assembly, inventory_date = current_date)
+        except DailyInventory.DoesNotExist:
             return None
     
-    def update_quantity_for_product_in_packaging(self, product_data, product_quantity):
+    def update_quantity_for_product_in_inventory(self, product_data, product_quantity):
         product_data.closing_stock -= product_quantity
         product_data.save()
     
-    def update_quantity_for_assembly_in_packaging(self, packed_assembly_data, assembly_quantity):
-        packed_assembly_data.quantity -= assembly_quantity
+    def update_quantity_for_assembly_in_inventory(self, packed_assembly_data, assembly_quantity):
+        packed_assembly_data.closing_stock -= assembly_quantity
         packed_assembly_data.save()
     
     def create_or_update_repair_product(self, product_code, quantity):
@@ -673,7 +673,7 @@ class RepairedProductData(APIView):
             else:
                 update_opening_stock = int(quantity)
             packaged_product = RepairProduct.objects.create(
-                product_id=product_code, opening_stock=update_opening_stock, closing_stock=update_opening_stock,packaged_date=today
+                product_id=product_code, opening_stock=update_opening_stock, closing_stock=update_opening_stock, date=today
             )
             return packaged_product, True
     
@@ -694,7 +694,7 @@ class RepairedProductData(APIView):
             else:
                 update_opening_stock = int(assembly_quantity)
             assembly_product = RepairProduct.objects.create(
-                assembly_id=assembly, opening_stock=update_opening_stock, closing_stock=update_opening_stock, packaged_date=today
+                assembly_id=assembly, opening_stock=update_opening_stock, closing_stock=update_opening_stock, date=today
             )
             return assembly_product, True
 
@@ -773,7 +773,7 @@ class RejectProductData(APIView):
                     product_code = data['product']
                     quantity = int(data['quantity'])
                     
-                    packed_product_data = self.get_product_packed_data(product_code)
+                    packed_product_data = self.get_product_inventory_data(product_code)
                     if not product_data:
                         return self.not_found_response(product_code)
                     
@@ -792,7 +792,7 @@ class RejectProductData(APIView):
                     assembly = data['assembly']
                     assembly_quantity = int(data['quantity'])
                         
-                    packed_assembly_data = self.get_assembly_packed_data(assembly)
+                    packed_assembly_data = self.get_assembly_inventory_data(assembly)
                     if not packed_assembly_data:
                         return self.not_found_response(assembly)
                     
@@ -806,26 +806,26 @@ class RejectProductData(APIView):
         except Exception as e:
             return self.error_response(e)
     
-    def get_product_packed_data(self, product_code):
+    def get_product_inventory_data(self, product_code):
         try:
             current_date = date.today()
-            return PackagedProduct.objects.get(product__product_code=product_code, packaged_date = current_date)
-        except PackagedProduct.DoesNotExist:
+            return DailyInventory.objects.get(product__product_code=product_code, inventory_date = current_date)
+        except DailyInventory.DoesNotExist:
             return None
     
-    def get_assembly_packed_data(self, assembly):
+    def get_assembly_inventory_data(self, assembly):
         try:
             current_date = date.today()
-            return PackagedProduct.objects.get(assembly__assembly_code=assembly, packaged_date = current_date)
-        except PackagedProduct.DoesNotExist:
+            return DailyInventory.objects.get(assembly__assembly_code=assembly, inventory_date = current_date)
+        except DailyInventory.DoesNotExist:
             return None
     
     def update_quantity_for_product(self, product_data, product_quantity):
-        product_data.quantity -= product_quantity
+        product_data.closing_stock -= product_quantity
         product_data.save()
     
     def update_quantity_for_assembly(self, packed_assembly_data, assembly_quantity):
-        packed_assembly_data.quantity -= assembly_quantity
+        packed_assembly_data.closing_stock -= assembly_quantity
         packed_assembly_data.save()
     
     def create_or_update_reject_product(self, product_code, quantity):

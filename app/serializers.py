@@ -108,7 +108,8 @@ class PackagedProductSerializer(serializers.ModelSerializer):
             "id", 
             "product", 
             "assembly",
-            "quantity",
+            "opening_stock",
+            "closing_stock",
             "packaged_date"
         ]
 

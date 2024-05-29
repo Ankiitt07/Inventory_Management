@@ -8,7 +8,7 @@ from django.contrib import messages
 from django.db.models import Sum
 from .models import Product
 from django.shortcuts import render, redirect, get_object_or_404
-from .token_auth_helper import verify_token_class
+from .token_auth_helper import verify_token_class, generate_order_no
 
 from .models import (
     PackagedProduct,
@@ -20,6 +20,7 @@ from .models import (
 
 class ProductsAnalytics(APIView):
 
+    # @verify_token_class
     def get(self, request, format=None):
         current_date = date.today()
 
@@ -78,4 +79,11 @@ class ProductsAnalytics(APIView):
         return Response(response, status=status.HTTP_200_OK)
 
 
-# class Invoice(APIView):
+class Invoice(APIView):
+    
+    @verify_token_class
+    def post(self, request, format=None):
+        product_data = request.data.get('product_data')
+
+        order_no = generate_order_no()
+        

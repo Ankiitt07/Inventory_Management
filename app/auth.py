@@ -102,3 +102,7 @@ class ResetPassword(APIView):
 
         response = {"success": True, "message": "Password Reset Successfully"}
         return Response(response, status=status.HTTP_200_OK)
+
+
+# class Logout(APIView):
+    

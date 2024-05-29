@@ -208,3 +208,45 @@ class RejectProduct(models.Model):
     class Meta:
         db_table = 'reject_product_table'
         managed = True
+
+
+class InvoiceData(models.Model):
+    id = models.AutoField(primary_key=True)
+    order_no = models.CharField(max_length=200, blank=True, null=True)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2) 
+    date = models.DateField(default = None)
+    created_at = models.DateTimeField(auto_now=True)
+    created_by = models.IntegerField(default="0")
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.IntegerField(default="0")
+    deleted_at = models.DateTimeField(blank=True, null=True)
+    deleted_by = models.IntegerField(default="0")
+
+    def __str__(self):
+        return self.id
+    
+    class Meta:
+        db_table = 'invoice_table'
+        managed = True
+
+class InvoiceProducts(models.Model):
+    id = models.AutoField(primary_key=True)
+    order_no = models.CharField(max_length=200, blank=True, null=True) 
+    product = models.CharField(max_length=200, blank=True, null=True) 
+    assembly = models.CharField(max_length=200, blank=True, null=True)
+    quantity = models.IntegerField() 
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2) 
+    date = models.DateField(default = None)
+    created_at = models.DateTimeField(auto_now=True)
+    created_by = models.IntegerField(default="0")
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.IntegerField(default="0")
+    deleted_at = models.DateTimeField(blank=True, null=True)
+    deleted_by = models.IntegerField(default="0")
+
+    def __str__(self):
+        return self.id
+    
+    class Meta:
+        db_table = 'invoice_product_table'
+        managed = True

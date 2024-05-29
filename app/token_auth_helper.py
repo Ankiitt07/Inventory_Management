@@ -1,8 +1,8 @@
 import jwt as jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
-from .models import Users
+from .models import Users, InvoiceData
 
 def create_token(token):
     return jwt.encode(token, '1311874k', algorithm='HS256')
@@ -83,3 +83,10 @@ def verify_token_class(func):
         
         
     return decorated
+
+
+def generate_order_no():
+    current_date = date.today()
+    last_order_no = InvoiceData.objects.filter(date = current_date).order_by('-id').first()
+    order_number = f"{datetime.now()}"
+    return order_number
