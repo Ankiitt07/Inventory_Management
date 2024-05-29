@@ -91,15 +91,8 @@ class ResetPassword(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         
-        user = Users.objects.create(
-            email=self.validated_data["email"],
-            password=make_password(self.validated_data["password"]),
-            first_name=self.validated_data.get("first_name", ""),
-            last_name=self.validated_data.get("last_name", "")
-        )
-        
         user_data.password = make_password(new_password)
-        user.save()
+        user_data.save()
 
         response = {"success": True, "message": "Password Reset Successfully"}
         return Response(response, status=status.HTTP_200_OK)

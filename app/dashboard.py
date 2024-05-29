@@ -12,7 +12,8 @@ from .serializers import (
     PackagedProductSerializer,
     DispatchedProductSerializer,
     RepairProductSerializer,
-    RejectProductSerializer
+    RejectProductSerializer,
+    InvoiceProductSerializer
     )
 from django.shortcuts import render, redirect, get_object_or_404
 from .token_auth_helper import verify_token_class, generate_order_no
@@ -57,6 +58,7 @@ class Invoice(APIView):
     def post(self, request, format=None):
 
         product_data = request.data.get('product_data')
+        assembly_data = request.data.get('assembly_data')
         total_amount = request.data.get('total_amount')
 
         order_no = generate_order_no()
@@ -71,8 +73,34 @@ class Invoice(APIView):
             except Exception as e:
                 return Response({"error" : f"{e}"})
         
-        # for data in product_data:
+        invoice_products = []
+        if product_data:
+            for data in product_data:
+                item = {
+                    "order_no" : order_no,
+                    "product" : data['product'],
+                    "quantity" : data['quantity'],
+                    "date" :  date.today()
+                }
+                invoice_products.append(item)
+        if assembly_data:
+            for data in assembly_data:
+                item = {
+                    "order_no" : order_no,
+                    "assembly" : data['assembly'],
+                    "quantity" : data['quantity'],
+                    "date" :  date.today()
+                }
+                invoice_products.append(item)
+        serializer = InvoiceProductSerializer(invoice_products, many=True)
 
-        # InvoiceProducts.objects.create(
-        #     p
-        # )
+        if serializer.is_valid():
+            serializer.save()
+            response = {
+                "success" : True,
+                "message" : "Invoice product addedd successfully",
+                "data" : {"invoive_data" : serializer.data}
+            }
+            return Response(response, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

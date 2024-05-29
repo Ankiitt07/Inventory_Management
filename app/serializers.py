@@ -9,7 +9,8 @@ from .models import (
     PackagedProduct,
     DispatchedProduct,
     RepairProduct,
-    RejectProduct
+    RejectProduct,
+    InvoiceProducts
 )
 
 class UserRegisterSerializer(serializers.ModelSerializer):
@@ -152,4 +153,17 @@ class RejectProductSerializer(serializers.ModelSerializer):
             "assembly_code",
             "quantity",
             "created_at"
+        ]
+
+class InvoiceProductSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = InvoiceProducts
+        fields = [
+            "id", 
+            "order_no", 
+            "product",
+            "assembly",
+            "quantity",
+            "date"
         ]
