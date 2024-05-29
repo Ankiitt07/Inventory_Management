@@ -149,8 +149,8 @@ class RejectProductSerializer(serializers.ModelSerializer):
         model = RejectProduct
         fields = [
             "id", 
-            "product_code", 
-            "assembly_code",
+            "product", 
+            "assembly",
             "quantity",
             "created_at"
         ]

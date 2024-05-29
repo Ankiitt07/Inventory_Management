@@ -20,18 +20,20 @@
         <table class="table" aria-describedby="">
             <thead>
               <tr>
-                <th scope="col">Product Code</th>
                 <th scope="col">Assembly Code</th>
+                <th scope="col">Product Code</th>
                 <th scope="col">Product Quantity</th>
+                <th scope="col">Status</th>
               </tr>
             </thead>
             <tbody>
               {% if assembly_products %}
               {% for item in assembly_products %}
               <tr>
-                <td>{{item.product_code}}</td>
-                <td>{{item.assembly_code}}</td>
-                <td>{{item.product_qty}}</td>
+                <td>{{item.assembly.assembly_code}}</td>
+                <td>{{item.product.product_code}}</td>
+                <td>{{item.product_quantity}}</td>
+                <td>{{item.status}}</td>
               </tr>
               {% endfor %}
               {% endif %}

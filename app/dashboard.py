@@ -3,9 +3,9 @@ from django.db import transaction
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, viewsets
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 from django.contrib import messages
-from django.db.models import Sum
+from django.db.models import Sum, Count
 from .models import Product, InvoiceData, InvoiceProducts
 from .serializers import (
     DailyInventorySerializer,
@@ -29,7 +29,7 @@ from .models import (
 
 class ProductsAnalytics(viewsets.ModelViewSet):
 
-    @verify_token_class
+    # @verify_token_class
     def get_products_count(self, request, date, format=None):
 
         inventory_serializer = DailyInventorySerializer(DailyInventory.objects.filter(inventory_date = date), many = True)
@@ -60,7 +60,6 @@ class Invoice(APIView):
         product_data = request.data.get('product_data')
         assembly_data = request.data.get('assembly_data')
         total_amount = request.data.get('total_amount')
-
         order_no = generate_order_no()
 
         if order_no:
@@ -104,3 +103,62 @@ class Invoice(APIView):
             return Response(response, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class DashboardGraphData(APIView):
+
+    def get(self, request, format=None):
+        today = date.today()
+        seven_days_ago = today - timedelta(days=7)
+
+        dates = [seven_days_ago + timedelta(days=i) for i in range(7)]
+        
+        def get_closing_stock_sum(model, date_field):
+            closing_stock_sum = []
+            for current_date in dates:
+                daily_data = model.objects.filter(**{date_field: current_date})
+                if model in (DispatchedProduct, RejectProduct):
+                    total_closing_stock = daily_data.aggregate(total=Sum('quantity'))['total']
+                else:
+                    total_closing_stock = daily_data.aggregate(total=Sum('closing_stock'))['total']
+                closing_stock_sum.append(total_closing_stock or 0)
+            return closing_stock_sum
+
+        inventory_data = get_closing_stock_sum(DailyInventory, 'inventory_date')
+        packaging_data = get_closing_stock_sum(PackagedProduct, 'packaged_date')
+        dispatch_data = get_closing_stock_sum(DispatchedProduct, 'dispatched_date')
+        repair_data = get_closing_stock_sum(RepairProduct, 'date')
+        reject_data = get_closing_stock_sum(RejectProduct, 'date')
+
+        series = [
+            {
+                "name": "Inventory",
+                "data": inventory_data,
+            },
+            {
+                "name": "Packaging",
+                "data": packaging_data,
+            },
+            {
+                "name": "Dispatch",
+                "data": dispatch_data,
+            },
+            {
+                "name": "Repair",
+                "data": repair_data,
+            },
+            {
+                "name": "Reject",
+                "data": reject_data,
+            },
+        ]
+
+        categories = [date.strftime("%A") for date in dates]
+
+        response = {
+            "success": True,
+            "message": "success",
+            "series": series,
+            "categories": categories
+        }
+        return Response(response, status=status.HTTP_200_OK)

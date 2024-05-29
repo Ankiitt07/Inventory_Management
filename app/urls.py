@@ -15,9 +15,7 @@ from .views import (
     RepairedProductData,
     RejectProductData
 )
-from app.dashboard import (
-    ProductsAnalytics
-)
+from app import dashboard
 from app.auth import (
     UserRegister, 
     UserLogin, 
@@ -72,8 +70,13 @@ urlpatterns = [
     # URLs for Analytics
     path(
         'products_count_data/<str:date>/', 
-        ProductsAnalytics.as_view({"get": "get_products_count"}), 
+        dashboard.ProductsAnalytics.as_view({"get": "get_products_count"}), 
         name="get_products_count"
+    ),
+    path(
+        'dashboard_graph_data/', 
+        dashboard.DashboardGraphData.as_view(), 
+        name="dashboard_graph_data"
     ),
 
     # URLs for testing

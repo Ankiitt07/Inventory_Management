@@ -910,7 +910,7 @@ class RejectProductData(APIView):
                     if not product_data:
                         return self.not_found_response(product_code)
                     
-                    if packed_product_data.quantity < quantity:
+                    if packed_product_data.closing_stock < quantity:
                         return self.insufficient_stock_response(product_code)
                     
                     self.update_quantity_for_product(packed_product_data, quantity)
@@ -929,7 +929,7 @@ class RejectProductData(APIView):
                     if not packed_assembly_data:
                         return self.not_found_response(assembly)
                     
-                    if packed_assembly_data.quantity < assembly_quantity:
+                    if packed_assembly_data.closing_stock < assembly_quantity:
                         return self.insufficient_stock_response_for_assembly(assembly)
                     
                     self.update_quantity_for_assembly(packed_assembly_data, assembly_quantity)
