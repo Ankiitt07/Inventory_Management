@@ -29,7 +29,7 @@ from .models import (
 
 class ProductsAnalytics(viewsets.ModelViewSet):
 
-    # @verify_token_class
+    @verify_token_class
     def get_products_count(self, request, date, format=None):
 
         inventory_serializer = DailyInventorySerializer(DailyInventory.objects.filter(inventory_date = date), many = True)
@@ -107,6 +107,7 @@ class Invoice(APIView):
 
 class DashboardGraphData(APIView):
 
+    @verify_token_class
     def get(self, request, format=None):
         response = {
             "success": True,

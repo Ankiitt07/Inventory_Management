@@ -18,7 +18,8 @@ from .views import (
 from app import dashboard
 from app.auth import (
     UserRegister, 
-    UserLogin, 
+    UserLogin,
+    Logout, 
     ResetPassword
 )
 from .views import add_opening_stocks
@@ -29,6 +30,7 @@ urlpatterns = [
     # URLs related to auth APIs
     path("user_register/", UserRegister.as_view(), name='user_register'),
     path("user_login/", UserLogin.as_view(), name='user_login'),
+    path("user_logout/", Logout.as_view(), name='user_logout'),
     path("reset_password/", ResetPassword.as_view(), name='reset_password'),
 
     # URLs related to product data API.

@@ -2,12 +2,12 @@ import uuid
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Users
+from .models import Users, BlacklistToken
 from datetime import datetime, timedelta
 from django.utils import timezone
 from django.contrib.auth.hashers import check_password
 from django.contrib.auth.hashers import make_password
-from .token_auth_helper import create_token
+from .token_auth_helper import create_token, verify_token_class
 from .serializers import (
     UserRegisterSerializer,
     UserLoginSerializer
@@ -120,5 +120,21 @@ class ResetPassword(APIView):
         return Response(response, status=status.HTTP_200_OK)
 
 
-# class Logout(APIView):
+
+class Logout(APIView):
+
+    @verify_token_class
+    def post(self, request):
+        try:
+
+            token = request.headers.get('Authorization').split()[1]
+
+            blacklisted_token, created = BlacklistToken.objects.get_or_create(token=token)
+
+            if created:
+                return Response({"message": "Signout successful. Token has been blacklisted."}, status=status.HTTP_200_OK)
+            else:
+                return Response({"message": "Token was already blacklisted."}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
     
