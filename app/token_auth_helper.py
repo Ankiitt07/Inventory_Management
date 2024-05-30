@@ -1,5 +1,6 @@
 import jwt as jwt
 from datetime import datetime, timedelta, date
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 from django.http import JsonResponse

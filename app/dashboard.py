@@ -108,12 +108,26 @@ class Invoice(APIView):
 class DashboardGraphData(APIView):
 
     def get(self, request, format=None):
+        response = {
+            "success": True,
+            "message": "success",
+            "weekly":{
+                "series_weekly" : self.get_weekly_data(),
+                "categories_weekly": self.get_weekly_categories(),
+            }, 
+            "monthly":{
+                "series_monthly" : self.get_monthly_data(),
+                "categories_monthly": self.get_weekly_categories(),
+            } 
+        }
+        return Response(response, status=status.HTTP_200_OK)
+
+    def get_weekly_data(self):
         today = date.today()
         seven_days_ago = today - timedelta(days=7)
-
         dates = [seven_days_ago + timedelta(days=i) for i in range(7)]
-        
-        def get_closing_stock_sum(model, date_field):
+
+        def get_closing_stock_sum_weekly(model, date_field):
             closing_stock_sum = []
             for current_date in dates:
                 daily_data = model.objects.filter(**{date_field: current_date})
@@ -124,13 +138,13 @@ class DashboardGraphData(APIView):
                 closing_stock_sum.append(total_closing_stock or 0)
             return closing_stock_sum
 
-        inventory_data = get_closing_stock_sum(DailyInventory, 'inventory_date')
-        packaging_data = get_closing_stock_sum(PackagedProduct, 'packaged_date')
-        dispatch_data = get_closing_stock_sum(DispatchedProduct, 'dispatched_date')
-        repair_data = get_closing_stock_sum(RepairProduct, 'date')
-        reject_data = get_closing_stock_sum(RejectProduct, 'date')
+        inventory_data = get_closing_stock_sum_weekly(DailyInventory, 'inventory_date')
+        packaging_data = get_closing_stock_sum_weekly(PackagedProduct, 'packaged_date')
+        dispatch_data = get_closing_stock_sum_weekly(DispatchedProduct, 'dispatched_date')
+        repair_data = get_closing_stock_sum_weekly(RepairProduct, 'date')
+        reject_data = get_closing_stock_sum_weekly(RejectProduct, 'date')
 
-        series = [
+        return [
             {
                 "name": "Inventory",
                 "data": inventory_data,
@@ -153,12 +167,49 @@ class DashboardGraphData(APIView):
             },
         ]
 
-        categories = [date.strftime("%A") for date in dates]
+    def get_monthly_data(self):
+        today = date.today()
+        start_of_month = today.replace(day=1)
 
-        response = {
-            "success": True,
-            "message": "success",
-            "series": series,
-            "categories": categories
-        }
-        return Response(response, status=status.HTTP_200_OK)
+        def get_closing_stock_sum_monthly(model, date_field):
+            monthly_data = model.objects.filter(**{f'{date_field}__range': [start_of_month, today]})
+            if model in (DispatchedProduct, RejectProduct):
+                total_closing_stock = monthly_data.aggregate(total=Sum('quantity'))['total']
+            else:
+                total_closing_stock = monthly_data.aggregate(total=Sum('closing_stock'))['total']
+            return total_closing_stock or 0
+
+        inventory_data = get_closing_stock_sum_monthly(DailyInventory, 'inventory_date')
+        packaging_data = get_closing_stock_sum_monthly(PackagedProduct, 'packaged_date')
+        dispatch_data = get_closing_stock_sum_monthly(DispatchedProduct, 'dispatched_date')
+        repair_data = get_closing_stock_sum_monthly(RepairProduct, 'date')
+        reject_data = get_closing_stock_sum_monthly(RejectProduct, 'date')
+
+        return [
+            {
+                "name": "Inventory",
+                "data": [inventory_data],
+            },
+            {
+                "name": "Packaging",
+                "data": [packaging_data],
+            },
+            {
+                "name": "Dispatch",
+                "data": [dispatch_data],
+            },
+            {
+                "name": "Repair",
+                "data": [repair_data],
+            },
+            {
+                "name": "Reject",
+                "data": [reject_data],
+            },
+        ]
+
+    def get_weekly_categories(self):
+        today = date.today()
+        seven_days_ago = today - timedelta(days=7)
+        dates = [seven_days_ago + timedelta(days=i) for i in range(7)]
+        return [date.strftime("%A") for date in dates]

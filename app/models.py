@@ -7,6 +7,24 @@ status_choice = [
     (1, 'Active')
 ]
 
+class Admin(models.Model):
+    id = models.AutoField(primary_key=True)
+    admin_first_name = models.CharField(max_length=100, blank=True, null=True)
+    admin_first_name = models.CharField(max_length=100, blank=True, null=True)
+    admin_user_name = models.EmailField(unique=True)
+    password = models.CharField(max_length=250, default=None)
+    created_at = models.DateTimeField(auto_now=True)
+    created_by = models.IntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(blank=True, null=True)
+    soft_deleted = models.IntegerField(default=0)
+
+    def __str__(self):
+            return self.admin_first_name
+
+    class Meta:
+        db_table = 'admin_table'
+        managed = True
 
 class Users(models.Model):
     user_id = models.AutoField(primary_key=True)
@@ -14,6 +32,10 @@ class Users(models.Model):
     last_name = models.CharField(max_length=100, blank=True, null=True)
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=250, default=None)
+    user_status = models.IntegerField(
+        choices=status_choice,
+        default=0
+    )
     created_at = models.DateTimeField(auto_now=True)
     created_by = models.IntegerField(default=0)
     updated_at = models.DateTimeField(auto_now=True)
@@ -25,6 +47,22 @@ class Users(models.Model):
 
     class Meta:
         db_table = 'users_table'
+        managed = True
+
+class BlacklistToken(models.Model):
+    id = models.AutoField(primary_key=True)
+    token = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now=True)
+    created_by = models.IntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+    deleted_at = models.DateTimeField(blank=True, null=True)
+    soft_deleted = models.IntegerField(default=0)
+
+    def __str__(self):
+            return self.id
+
+    class Meta:
+        db_table = 'blacklist_token_table'
         managed = True
 
 

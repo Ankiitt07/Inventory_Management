@@ -81,6 +81,5 @@ urlpatterns = [
 
     # URLs for testing
     path('add_products/', add_opening_stocks, name='add_products'),
-    path('generate_order_no/', generate_order_no, name='generate_order_no'),
-    
+    path('generate_order_no/', generate_order_no, name='generate_order_no')    
 ]

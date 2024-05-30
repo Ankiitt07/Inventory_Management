@@ -13,6 +13,25 @@ from .serializers import (
     UserLoginSerializer
     )
 
+
+# API for User status update
+class CreateUser(APIView):
+
+    def post(self, request, format=None):
+        user_name = request.data.get('user_name')
+        password = request.data.get('password')
+
+        Users.objects.create(
+            user_name =user_name,
+            password = password,
+            user_status = 1
+        )
+        response = {
+            "success" : True,
+            "message" : "User Created successfully"
+        }
+        return Response(response, status=status.HTTP_201_CREATED)
+        
 # API for user registered
 class UserRegister(APIView):
 
@@ -38,26 +57,29 @@ class UserLogin(APIView):
             email = serializer.validated_data['email']
             password = serializer.validated_data['password']
             try:
-                user = Users.objects.get(email=email)
-                if check_password(password, user.password):
-                    unique_id = uuid.uuid4()
-                    unique_string = str(unique_id).replace("-","0")
-                    member_token = unique_string
-                    token = {
-                        'user_id': user.user_id,
-                        'user_token': member_token,
-                        'created_on': str(datetime.now()),
-                        'expiring_on': str(datetime.now() + timedelta(days=20))
-                    }
-                    access_token = create_token(token)
-                    response = {
-                        "success": True,
-                        "message": "Login successful",
-                        "token": access_token
-                    }
-                    return Response(response, status=status.HTTP_200_OK)
+                if Users.objects.filter(email=email, user_status=1).exists():
+                    user = Users.objects.get(email=email, user_status=1)
+                    if check_password(password, user.password):
+                        unique_id = uuid.uuid4()
+                        unique_string = str(unique_id).replace("-","0")
+                        member_token = unique_string
+                        token = {
+                            'user_id': user.user_id,
+                            'user_token': member_token,
+                            'created_on': str(datetime.now()),
+                            'expiring_on': str(datetime.now() + timedelta(days=20))
+                        }
+                        access_token = create_token(token)
+                        response = {
+                            "success": True,
+                            "message": "Login successful",
+                            "token": access_token
+                        }
+                        return Response(response, status=status.HTTP_200_OK)
+                    else:
+                        return Response({"error": "Invalid email or password"}, status=status.HTTP_401_UNAUTHORIZED)
                 else:
-                    return Response({"error": "Invalid email or password"}, status=status.HTTP_401_UNAUTHORIZED)
+                    return Response({"error": "User does not exists"}, status=status.HTTP_400_BAD_REQUEST)
             except Users.DoesNotExist:
                 return Response({"error": "Invalid email or password"}, status=status.HTTP_401_UNAUTHORIZED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
