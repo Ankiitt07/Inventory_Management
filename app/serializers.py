@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from django.contrib.auth.hashers import make_password
 from .models import (
+    Admin,
     Users,
     Product, 
     AssemblyLine, 
@@ -12,6 +13,24 @@ from .models import (
     RejectProduct,
     InvoiceProducts
 )
+
+class AdminRegisterSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Admin
+        fields = ["admin_first_name", "admin_user_name", "password"]
+    
+    def save(self):
+
+        if Admin.objects.filter(admin_user_name=self.validated_data["admin_user_name"]).exists():
+            raise serializers.ValidationError({"error": "This email already exists!"})
+
+        # Create the user with hashed password
+        user = Users.objects.create(
+            admin_user_name=self.validated_data["admin_user_name"],
+            password=make_password(self.validated_data["password"]),
+            admin_first_name=self.validated_data.get("admin_first_name", ""),
+        )
+        return user
 
 class UserRegisterSerializer(serializers.ModelSerializer):
     class Meta:

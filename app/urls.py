@@ -76,6 +76,11 @@ urlpatterns = [
         name="get_products_count"
     ),
     path(
+        'daily_products_count_data/', 
+        dashboard.ProductsAnalytics.as_view({"get": "get_daily_products_count"}), 
+        name="get_products_count"
+    ),
+    path(
         'dashboard_graph_data/', 
         dashboard.DashboardGraphData.as_view(), 
         name="dashboard_graph_data"

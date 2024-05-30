@@ -50,6 +50,30 @@ class ProductsAnalytics(viewsets.ModelViewSet):
             "reject_data": reject_serializer.data
         }
         return Response(response, status=status.HTTP_200_OK)
+    
+    @verify_token_class
+    def get_daily_products_count(self, request, format=None):
+
+        current_date = date.today()
+
+        inventory_serializer = DailyInventorySerializer(DailyInventory.objects.filter(inventory_date = current_date), many = True)
+        package_serializer = PackagedProductSerializer(PackagedProduct.objects.filter(packaged_date = current_date), many = True)
+        dispatch_serializer = DispatchedProductSerializer(DispatchedProduct.objects.filter(dispatched_date = current_date), many = True)
+        repair_serializer = RepairProductSerializer(RepairProduct.objects.filter(date = current_date), many = True)
+        reject_serializer = RejectProductSerializer(RejectProduct.objects.filter(date = current_date), many = True)
+
+        
+        response = {
+            "success": True,
+            "message": "Analytics data fetched",
+            "date": current_date,
+            "inventory_data": inventory_serializer.data,
+            "package_data": package_serializer.data,
+            "dispatch_data": dispatch_serializer.data,
+            "repair_data": repair_serializer.data,
+            "reject_data": reject_serializer.data
+        }
+        return Response(response, status=status.HTTP_200_OK)
 
 
 class Invoice(APIView):

@@ -10,7 +10,6 @@ status_choice = [
 class Admin(models.Model):
     id = models.AutoField(primary_key=True)
     admin_first_name = models.CharField(max_length=100, blank=True, null=True)
-    admin_first_name = models.CharField(max_length=100, blank=True, null=True)
     admin_user_name = models.EmailField(unique=True)
     password = models.CharField(max_length=250, default=None)
     created_at = models.DateTimeField(auto_now=True)

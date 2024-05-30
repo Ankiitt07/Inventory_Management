@@ -10,9 +10,25 @@ from django.contrib.auth.hashers import make_password
 from .token_auth_helper import create_token, verify_token_class
 from .serializers import (
     UserRegisterSerializer,
-    UserLoginSerializer
+    UserLoginSerializer,
+    AdminRegisterSerializer
     )
 
+# API for admin registered
+class AdminRegister(APIView):
+
+    def post(self, request, format=None):
+        
+        serializer = AdminRegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            response = {
+                "success" : True,
+                "message" : "User registered successfully"
+            }
+            return Response(response, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # API for User status update
 class CreateUser(APIView):
